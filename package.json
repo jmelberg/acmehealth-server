@@ -1,15 +1,17 @@
 {
-  "name": "server-ios",
+  "name": "server-acme-health",
   "version": "1.0.0",
-  "description": "CRUD API for iOS App",
-  "main": "index.js",
+  "description": "REST API for Okta Acme Health",
+  "main": "server.js",
+  "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Jordan Melberg <jordan.melberg@okta.com> (https://github.com/jmelberg-okta)",
   "license": "Apache 2.0",
   "dependencies": {
     "mongodb": "^2.2.5",
-    "restify": "^3.9.5"
+    "passport-oauth2-jwt-bearer": "https://github.com/mcguinness/passport-okta-oidc-bearer.git",
+    "passport-restify": "^1.0.1",
+    "restify": "^4.1.1"
   }
 }

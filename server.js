@@ -153,7 +153,7 @@ server.put({path: '/appointments/:_id'},
 
 // Delete appointment
 server.del({path: '/appointments/:id'},
-  passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:write'] }),
+  passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:cancel'] }),
   function response(req, res, next) {
   collection.deleteOne({"_id":ObjectID(req.params.id)},
     function (err, results) {
@@ -166,21 +166,27 @@ server.del({path: '/appointments/:id'},
 });
 
 // Scope Required: 'appointments:read'
-server.get({path: '/appointments'},
+server.get({path: '/appointments/:filter'},
   passport.authenticate('oauth2-jwt-bearer', { session: false , scopes: ['appointments:read']}),
   function respond(req, res, next) {
-    var cursor = collection.find({}).sort({'startTime' : 1}).toArray(function (err, result) {
-    if (err) {  res.send(err); }
-    else if (result.length) { console.log("Found: ", result.length); }
-    else { console.log("None found"); }
-    res.send(200, result);
+    var patientQuery = collection.find(
+      {
+        $or: [
+        {'patientId' : req.params.filter},
+        {'providerId' : req.params.filter}
+        ]
+      }).toArray(function(err, result) {
+      if(err) {
+        res.send(err);
+      } else if(result.length) {console.log("Found: " , result.length);}
+      res.send(200,result);
     });
     return next();
   }
 );
 
 // Return available providers
-// Scope Required: 'API'
+// Scope Required: 'providers:read'
 
 server.get({path: '/providers'},
   passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['providers:read'] }),
@@ -207,7 +213,6 @@ server.get({path: '/providers'},
 
 // Delete all from db
 server.get({path: '/delete'},
-    passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:write'] }),
     function respond(req, res, next) {
     var cursor = collection.find({}).toArray(function (err, result) {
       if (err) { res.send(err);}

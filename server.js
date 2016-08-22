@@ -3,13 +3,15 @@ var restify = require('restify');
 var mongodb = require('mongodb');
 var passport = require('passport-restify');
 var Strategy = require('passport-oauth2-jwt-bearer').Strategy;
+var externalRequest = require('request');
 var ObjectID = mongodb.ObjectID;
 
-var audience = 'Jw1nyzbsNihSuOETY3R1';
-var issuer =   'https://jordandemo.oktapreview.com/as/ors6hokuutxf4qXr80h7';
+// Defined in Authorization Server Settings -> Resource URI
+var audience = 'http://localhost:8080';
 
-// var metadataUrl = 'http://rain.okta1.com:1802/.well-known/openid-configuration';
-var metadataUrl = 'https://jordandemo.oktapreview.com/.well-known/openid-configuration';
+// Issuer + Metadata Endpoints
+var issuer =   'https://jordandemo.oktapreview.com/as/aus7xbiefo72YS2QW0h7';
+var metadataUrl = 'https://jordandemo.oktapreview.com/as/aus7xbiefo72YS2QW0h7/.well-known/oauth-authorization-server';
 
 // Database url
 var url = 'mongodb://localhost:27017/'
@@ -23,13 +25,6 @@ mongodb.MongoClient.connect(url, function(err, db) {
 
 var server = restify.createServer();
 server.use(restify.bodyParser());
-server.use(
-  function crossOrigin(req,res,next){
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "X-Requested-With");
-    return next();
-  }
-);
 
 server.use(passport.initialize());
 var strategy = new Strategy({
@@ -43,22 +38,19 @@ var strategy = new Strategy({
 });
 passport.use(strategy);
 
-
 // Add CORS Access
 server.use(restify.CORS());
-restify.CORS.ALLOW_HEADERS.push( "authorization"        );
-restify.CORS.ALLOW_HEADERS.push( "withcredentials"      );
-restify.CORS.ALLOW_HEADERS.push( "x-requested-with"     );
-restify.CORS.ALLOW_HEADERS.push( "x-forwarded-for"      );
-restify.CORS.ALLOW_HEADERS.push( "x-real-ip"            );
-restify.CORS.ALLOW_HEADERS.push( "x-customheader"       );
-restify.CORS.ALLOW_HEADERS.push( "user-agent"           );
-restify.CORS.ALLOW_HEADERS.push( "keep-alive"           );
-restify.CORS.ALLOW_HEADERS.push( "host"                 );
-restify.CORS.ALLOW_HEADERS.push( "accept"               );
-restify.CORS.ALLOW_HEADERS.push( "connection"           );
-restify.CORS.ALLOW_HEADERS.push( "content-type"         );
-
+restify.CORS.ALLOW_HEADERS.push("authorization");
+restify.CORS.ALLOW_HEADERS.push("withcredentials");
+restify.CORS.ALLOW_HEADERS.push("x-requested-with");
+restify.CORS.ALLOW_HEADERS.push("x-forwarded-for");
+restify.CORS.ALLOW_HEADERS.push("x-customheader");
+restify.CORS.ALLOW_HEADERS.push("user-agent");
+restify.CORS.ALLOW_HEADERS.push("keep-alive");
+restify.CORS.ALLOW_HEADERS.push("host");
+restify.CORS.ALLOW_HEADERS.push("accept");
+restify.CORS.ALLOW_HEADERS.push("connection");
+restify.CORS.ALLOW_HEADERS.push("content-type");
 
 // Post appointment
 server.post({path: '/appointments'}, function(req, res, next) {
@@ -113,7 +105,6 @@ server.post({path: '/appointments'}, function(req, res, next) {
           "providerId": appointment.providerId,
           "patientId" : appointment.patientId,
           "patient" : appointment.patient
-
         }
       );
       return next(); 
@@ -122,36 +113,40 @@ server.post({path: '/appointments'}, function(req, res, next) {
 });
 
 // Update appointment
+// Scopes Required: 'appointments:confirm' AND/OR 'appointments:cancel' AND/OR 'appointments:edit'
 server.put({path: '/appointments/:_id'},
-  passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:write'] }),
-  function response(req, res, next) {
-  // Manually update "lastUpdated" field
-  var editAppointment = req.params;
-  editAppointment.lastUpdated = new Date();
+  passport.authenticate('oauth2-jwt-bearer', { session: false,
+    scopes: ['appointments:confirm'] || ['appointments:cancel'] || ['appointments:edit'] }),
+      function response(req, res, next) {
+      
+      // Manually update "lastUpdated" field
+      var editAppointment = req.params;
+      editAppointment.lastUpdated = new Date();
 
-  collection.updateOne( {"_id":ObjectID(req.params["_id"])},
-   {
-    'created' : editAppointment.created,
-    'lastUpdate': editAppointment.lastUpdated,
-    'comment' : editAppointment.comment,
-    'status' : editAppointment.status,
-    'startTime' : editAppointment.startTime,
-    'endTime' : editAppointment.endTime,
-    'location' : editAppointment.location,
-    'providerId' : editAppointment.providerId,
-    'patientId' : editAppointment.patientId,
-    'patient' : editAppointment.patient
-   }, true );
-  var updated = collection.find({"_id":ObjectID(req.params["_id"])}).toArray(function(err, result) {
-    if(err) {res.send(err); }
-    else if (result.length) {console.log("Found: ", result[0])}
-    else { console.log("None found") ;}
-  })
-  res.send(200, editAppointment);
-  return next();
+      collection.updateOne( {"_id":ObjectID(req.params["_id"])},
+       {
+        'created' : editAppointment.created,
+        'lastUpdate': editAppointment.lastUpdated,
+        'comment' : editAppointment.comment,
+        'status' : editAppointment.status,
+        'startTime' : editAppointment.startTime,
+        'endTime' : editAppointment.endTime,
+        'location' : editAppointment.location,
+        'providerId' : editAppointment.providerId,
+        'patientId' : editAppointment.patientId,
+        'patient' : editAppointment.patient
+       }, true );
+      var updated = collection.find({"_id":ObjectID(req.params["_id"])}).toArray(function(err, result) {
+        if(err) {res.send(err); }
+        else if (result.length) {console.log("Found: ", result[0])}
+        else { console.log("None found") ;}
+      })
+      res.send(200, editAppointment);
+      return next();
 });
 
 // Delete appointment
+// Scope Required: 'appointments:cancel'
 server.del({path: '/appointments/:id'},
   passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:cancel'] }),
   function response(req, res, next) {
@@ -187,10 +182,11 @@ server.get({path: '/appointments/:filter'},
 
 // Return available providers
 // Scope Required: 'providers:read'
-
 server.get({path: '/providers'},
   passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['providers:read'] }),
   function respond(req, res, next) {
+
+    // id given is Okta user_id
     res.send(200,
     [
       {
@@ -225,7 +221,6 @@ server.get({path: '/delete'},
     return next();
 });
 
-
-server.listen(8088, function() {
+server.listen(8088, '127.0.0.1', function() {
   console.log('listening: %s', server.url);
 });

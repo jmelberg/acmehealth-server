@@ -1,41 +1,85 @@
+var yargs = require('yargs');
 var url = require('url');
 var restify = require('restify');
 var mongodb = require('mongodb');
 var passport = require('passport-restify');
 var Strategy = require('passport-oauth2-jwt-bearer').Strategy;
-var externalRequest = require('request');
+var bunyan = require('bunyan');
 var ObjectID = mongodb.ObjectID;
 
-// Defined in Authorization Server Settings -> Resource URI
-var audience = 'http://localhost:8080';
 
-// Issuer + Metadata Endpoints
-var issuer =   'https://jordandemo.oktapreview.com/as/aus7xbiefo72YS2QW0h7';
-var metadataUrl = 'https://jordandemo.oktapreview.com/as/aus7xbiefo72YS2QW0h7/.well-known/oauth-authorization-server';
 
-// Database url
-var url = 'mongodb://localhost:27017/'
-var collection;
-mongodb.MongoClient.connect(url, function(err, db) {
-  if (err == null){
-      console.log("connected successfully");
-      collection = db.collection('appointments');
-  }
+/**
+ * Parse Arguments
+ */
+
+var argv = yargs
+  .usage('\nLaunches Acme Health REST Resource Server\n\n' +
+    'Usage:\n\t$0 -iss {issuer} -aud {audience}', {
+    issuer: {
+      description: 'Issuer URI for Authorization Server',
+      required: true,
+      alias: 'iss',
+      string: true
+    },
+    audience: {
+      description: 'Audience URI for Resource Server',
+      required: true,
+      alias: 'aud',
+      default: 'http://api.example.com',
+      string: true
+    },
+    dbUrl: {
+      description: 'MongoDB Database URL for Resource Server',
+      required: true,
+      default: 'mongodb://localhost:27017/',
+      string: true
+    }
+  })
+  .example('\t$0 --aud https://example.oktapreview.com/as/aus7xbiefo72YS2QW0h7 --aud http://api.example.com', '')
+  .argv;
+
+
+/**
+ * Globals
+ */
+
+var log = new bunyan.createLogger({
+  name: 'acme-health-server'
 });
 
-var server = restify.createServer();
-server.use(restify.bodyParser());
-
-server.use(passport.initialize());
 var strategy = new Strategy({
-  audience: audience,
-  issuer: issuer,
-  metadataUrl: metadataUrl,
+  audience: argv.audience,
+  issuer: argv.issuer,
+  metadataUrl: argv.issuer + '/.well-known/oauth-authorization-server',
   loggingLevel: 'debug'
 }, function(token, done) {
   // done(err, user, info)
   return done(null, token);
 });
+
+var server = restify.createServer({
+  log: log,
+  serializers: restify.bunyan.serializers
+});
+
+var collection;
+
+/**
+ * Middleware Configuration
+ */
+
+
+mongodb.MongoClient.connect(argv.dbUrl, function(err, db) {
+  if (err == null){
+    console.log("connected to db successfully");
+    collection = db.collection('appointments');
+  }
+});
+
+server.use(restify.requestLogger());
+server.use(restify.bodyParser());
+server.use(passport.initialize());
 passport.use(strategy);
 
 // Add CORS Access
@@ -51,6 +95,13 @@ restify.CORS.ALLOW_HEADERS.push("host");
 restify.CORS.ALLOW_HEADERS.push("accept");
 restify.CORS.ALLOW_HEADERS.push("connection");
 restify.CORS.ALLOW_HEADERS.push("content-type");
+
+
+server.on('after', restify.auditLogger({log: log}));
+
+/**
+ * Routes
+ */
 
 // Post appointment
 server.post({path: '/appointments'}, function(req, res, next) {
@@ -89,7 +140,7 @@ server.post({path: '/appointments'}, function(req, res, next) {
           "patient" : appointment.patient
         }
     );
-    return next(); 
+    return next();
     } else {
       console.log("An error occureed");
       res.send(status_code,
@@ -107,7 +158,7 @@ server.post({path: '/appointments'}, function(req, res, next) {
           "patient" : appointment.patient
         }
       );
-      return next(); 
+      return next();
     }
   });
 });
@@ -118,7 +169,7 @@ server.put({path: '/appointments/:_id'},
   passport.authenticate('oauth2-jwt-bearer', { session: false,
     scopes: ['appointments:confirm'] || ['appointments:cancel'] || ['appointments:edit'] }),
       function response(req, res, next) {
-      
+
       // Manually update "lastUpdated" field
       var editAppointment = req.params;
       editAppointment.lastUpdated = new Date();
@@ -221,6 +272,6 @@ server.get({path: '/delete'},
     return next();
 });
 
-server.listen(8088, '127.0.0.1', function() {
-  console.log('listening: %s', server.url);
+server.listen(8088, '0.0.0.0', function() {
+  log.info('listening: %s', server.url);
 });

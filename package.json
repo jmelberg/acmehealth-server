@@ -1,17 +1,19 @@
 {
-  "name": "server-acme-health",
+  "name": "acme-health-server",
   "version": "1.0.0",
   "description": "REST API for Okta Acme Health",
   "main": "server.js",
   "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js --iss $ISSUER| ./node_modules/bunyan/bin/bunyan -o short"
   },
   "license": "Apache 2.0",
   "dependencies": {
+    "bunyan": "^1.8.1",
     "mongodb": "^2.2.5",
     "passport-oauth2-jwt-bearer": "https://github.com/mcguinness/passport-okta-oidc-bearer.git",
     "passport-restify": "^1.0.1",
-    "restify": "^4.1.1"
+    "restify": "^4.1.1",
+    "yargs": "^5.0.0"
   }
 }

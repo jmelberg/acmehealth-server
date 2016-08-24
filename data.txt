@@ -1,0 +1,4 @@
+Added successfully
+{u'errorCode': u'E0000001', u'errorSummary': u'Api validation failed: login', u'errorLink': u'E0000001', u'errorCauses': [{u'errorSummary': u'login: An object with this field already exists in the current organization'}], u'errorId': u'oaehs30BUgcRkWp5WrRIFNB6Q'}
+{u'errorCode': u'E0000001', u'errorSummary': u'Api validation failed: login', u'errorLink': u'E0000001', u'errorCauses': [{u'errorSummary': u'login: An object with this field already exists in the current organization'}], u'errorId': u'oae-mCR_CmzTm2McUZyv1SuDA'}
+{u'errorCode': u'E0000001', u'errorSummary': u'Api validation failed: login', u'errorLink': u'E0000001', u'errorCauses': [{u'errorSummary': u'login: An object with this field already exists in the current organization'}], u'errorId': u'oaegasRyec7TS-ai4BZJByD4w'}

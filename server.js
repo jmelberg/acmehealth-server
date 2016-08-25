@@ -7,8 +7,6 @@ var Strategy = require('passport-oauth2-jwt-bearer').Strategy;
 var bunyan = require('bunyan');
 var ObjectID = mongodb.ObjectID;
 
-
-
 /**
  * Parse Arguments
  */
@@ -241,17 +239,17 @@ server.get({path: '/providers'},
     res.send(200,
     [
       {
-        "id" : "00u7vh4zm1l7YIjPB0h7",
+        "id" : "00u80l4aziQTF1NNH0h7",
         "name" : "Dr. John Doe",
         "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000001.imageset/0000001.png"
       },
       {
-        "id" : "00u7vg8f6mBaaa8cw0h7",
+        "id" : "00u80l8xca6FLKQyT0h7",
         "name" : "Dr. Jane Doe",
         "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000002.imageset/0000002.png"
       },
       {
-        "id" : "00u7vfod51Q0RBghC0h7",
+        "id" : "00u80l8xcoPyO4q3w0h7",
         "name" : "Dr. Richard Roe",
         "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000003.imageset/0000003.png"
       }

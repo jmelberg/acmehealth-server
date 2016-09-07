@@ -22,7 +22,7 @@ Node Server for CRUD API Management Operations
 ``` $ pod install```   (Takes some time)
 ### Run the Project
 #### Server:
-``` $ node server.js --iss "https://example.oktapreview.com/as/aus7xbiefo72YS2QW0h7" --aud "http://localhost:8080"```
+``` $ node server.js --iss "https://example.oktapreview.com/oauth2/aus7xbiefo72YS2QW0h7" --aud "http://localhost:8080"```
 #### SPA:
 ```$ http-server```
 #### iOS:

@@ -10,7 +10,7 @@
   "license": "Apache 2.0",
   "dependencies": {
     "bunyan": "^1.8.1",
-    "mongodb": "^2.2.5",
+    "lokijs": "^1.4.1",
     "passport-oauth2-jwt-bearer": "https://github.com/mcguinness/passport-okta-oidc-bearer.git",
     "passport-restify": "^1.0.1",
     "restify": "^4.1.1",

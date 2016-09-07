@@ -1,79 +1,82 @@
+/*  Authors: Karl McGuinness & Jordan Melberg */
+/** Copyright © 2016, Okta, Inc.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 var yargs = require('yargs');
 var url = require('url');
 var restify = require('restify');
-var mongodb = require('mongodb');
+var loki = require('lokijs');
 var passport = require('passport-restify');
 var Strategy = require('passport-oauth2-jwt-bearer').Strategy;
 var bunyan = require('bunyan');
-var ObjectID = mongodb.ObjectID;
 
 /**
  * Parse Arguments
  */
 
 var argv = yargs
-  .usage('\nLaunches Acme Health REST Resource Server\n\n' +
-    'Usage:\n\t$0 -iss {issuer} -aud {audience}', {
-    issuer: {
-      description: 'Issuer URI for Authorization Server',
-      required: true,
-      alias: 'iss',
-      string: true
-    },
-    audience: {
-      description: 'Audience URI for Resource Server',
-      required: true,
-      alias: 'aud',
-      default: 'http://api.example.com',
-      string: true
-    },
-    dbUrl: {
-      description: 'MongoDB Database URL for Resource Server',
-      required: true,
-      default: 'mongodb://localhost:27017/',
-      string: true
-    }
-  })
-  .example('\t$0 --aud https://example.oktapreview.com/as/aus7xbiefo72YS2QW0h7 --aud http://api.example.com', '')
-  .argv;
+.usage('\nLaunches Acme Health REST Resource Server\n\n' +
+'Usage:\n\t$0 -iss {issuer} -aud {audience}', {
+  issuer: {
+    description: 'Issuer URI for Authorization Server',
+    required: true,
+    alias: 'iss',
+    string: true
+  },
+  audience: {
+    description: 'Audience URI for Resource Server',
+    required: true,
+    alias: 'aud',
+    default: 'http://api.example.com',
+    string: true
+  }
+})
+.example('\t$0 --aud https://example.oktapreview.com/as/aus7xbiefo72YS2QW0h7 --aud http://api.example.com', '')
+.argv;
 
 
 /**
  * Globals
  */
 
-var log = new bunyan.createLogger({
-  name: 'acme-health-server'
-});
+var log = new bunyan.createLogger({name: 'acme-health-server'});
 
-var strategy = new Strategy({
-  audience: argv.audience,
-  issuer: argv.issuer,
-  metadataUrl: argv.issuer + '/.well-known/oauth-authorization-server',
-  loggingLevel: 'debug'
-}, function(token, done) {
-  // done(err, user, info)
-  return done(null, token);
-});
+var strategy = new Strategy(
+  {
+    audience: argv.audience,
+    issuer: argv.issuer,
+    metadataUrl: argv.issuer + '/.well-known/oauth-authorization-server',
+    loggingLevel: 'debug'
+  }, function(token, done) {
+    // done(err, user, info)
+    return done(null, token);
+  });
 
-var server = restify.createServer({
-  log: log,
-  serializers: restify.bunyan.serializers
-});
+var server = restify.createServer(
+  {
+    log: log,
+    serializers: restify.bunyan.serializers
+  });
 
-var collection;
+// Local DB
+var db = new loki('AcmeHealth');
+var appointments = db.addCollection('appointments', {});
 
 /**
  * Middleware Configuration
  */
-
-
-mongodb.MongoClient.connect(argv.dbUrl, function(err, db) {
-  if (err == null){
-    console.log("connected to db successfully");
-    collection = db.collection('appointments');
-  }
-});
 
 server.use(restify.requestLogger());
 server.use(restify.bodyParser());
@@ -103,62 +106,27 @@ server.on('after', restify.auditLogger({log: log}));
 
 // Post appointment
 server.post({path: '/appointments'}, function(req, res, next) {
-  var appointment = req.params;
-  console.log("Received: ", req.params)
+  var newAppointment = req.params;
 
   // Update required schema fields
-  appointment.status = "REQUESTED";
-  appointment.created = new Date();
-  appointment.lastUpdated = new Date();
-  appointment.startTime = new Date(req.params.startTime);
-  appointment.location = "Office";
+  newAppointment.status = "REQUESTED";
+  newAppointment.created = new Date();
+  newAppointment.lastUpdated = new Date();
+  newAppointment.startTime = new Date(req.params.startTime);
+  newAppointment.location = "Office";
 
   // Format endTime
-  var endTime = new Date(appointment.startTime);
-  appointment.endTime = new Date(endTime.setHours(endTime.getHours() + 1));
-
-  var status_code;
+  var endTime = new Date(newAppointment.startTime);
+  newAppointment.endTime = new Date(endTime.setHours(endTime.getHours() + 1));
 
   // Insert into DB
-  collection.insertOne( appointment, function(err, result) {
-    if(err == null){
-      console.log("Inserted appointment [" + result["ops"][0]["_id"] + "] into collection");
-      res.send(status_code,
-        {
-          "id": result["ops"][0]["_id"],
-          "status": appointment.status,
-          "created": appointment.created,
-          "lastUpdated": appointment.lastUpdated,
-          "comment": appointment.comment,
-          "startTime": appointment.startTime,
-          "endTime": appointment.endTime,
-          "location": appointment.location,
-          "providerId": appointment.providerId,
-          "patientId" : appointment.patientId,
-          "patient" : appointment.patient
-        }
-    );
-    return next();
-    } else {
-      console.log("An error occureed");
-      res.send(status_code,
-        {
-          "id": result["ops"][0]["_id"],
-          "status": appointment.status,
-          "created": appointment.created,
-          "lastUpdated": appointment.lastUpdated,
-          "comment": appointment.comment,
-          "startTime": appointment.startTime,
-          "endTime": appointment.endTime,
-          "location": appointment.location,
-          "providerId": appointment.providerId,
-          "patientId" : appointment.patientId,
-          "patient" : appointment.patient
-        }
-      );
-      return next();
-    }
-  });
+  var insertAppointment = appointments.insert( newAppointment );
+  try {
+    res.send(201, newAppointment);
+  } catch (err) { res.send(400, err); }
+  
+  return next();
+  
 });
 
 // Update appointment
@@ -166,68 +134,53 @@ server.post({path: '/appointments'}, function(req, res, next) {
 server.put({path: '/appointments/:_id'},
   passport.authenticate('oauth2-jwt-bearer', { session: false,
     scopes: ['appointments:confirm'] || ['appointments:cancel'] || ['appointments:edit'] }),
-      function response(req, res, next) {
+  function response(req, res, next) {
 
       // Manually update "lastUpdated" field
       var editAppointment = req.params;
       editAppointment.lastUpdated = new Date();
 
-      collection.updateOne( {"_id":ObjectID(req.params["_id"])},
-       {
-        'created' : editAppointment.created,
-        'lastUpdate': editAppointment.lastUpdated,
-        'comment' : editAppointment.comment,
-        'status' : editAppointment.status,
-        'startTime' : editAppointment.startTime,
-        'endTime' : editAppointment.endTime,
-        'location' : editAppointment.location,
-        'providerId' : editAppointment.providerId,
-        'patientId' : editAppointment.patientId,
-        'patient' : editAppointment.patient
-       }, true );
-      var updated = collection.find({"_id":ObjectID(req.params["_id"])}).toArray(function(err, result) {
-        if(err) {res.send(err); }
-        else if (result.length) {console.log("Found: ", result[0])}
-        else { console.log("None found") ;}
-      })
-      res.send(200, editAppointment);
+      // Remove param from json
+      delete editAppointment["_id"];
+      
+      try {
+        appointments.update(editAppointment);
+        res.send(200, editAppointment);
+      } catch (err) {  res.send(400, err);  }
+
       return next();
-});
+    });
 
 // Delete appointment
 // Scope Required: 'appointments:cancel'
 server.del({path: '/appointments/:id'},
   passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:cancel'] }),
   function response(req, res, next) {
-  collection.deleteOne({"_id":ObjectID(req.params.id)},
-    function (err, results) {
-      if (err) { res.send(err); }
-      else {
-        console.log("Removed entity");
-        res.send(204);}
-    });
-  return next();
-});
+    var removeAppointment = appointments.findOne({"$loki" : id});
+    
+    try {
+      appointments.remove(removeAppointment);
+      res.send(204);
+    } catch (err) { res.send(404, err);  }
+    
+    return next();
+  });
 
 // Scope Required: 'appointments:read'
 server.get({path: '/appointments/:filter'},
   passport.authenticate('oauth2-jwt-bearer', { session: false , scopes: ['appointments:read']}),
   function respond(req, res, next) {
-    var patientQuery = collection.find(
+    var patientQuery = appointments.chain().find(
       {
         $or: [
-        {'patientId' : req.params.filter},
-        {'providerId' : req.params.filter}
+          {'patientId' : req.params.filter},
+          {'providerId' : req.params.filter}
         ]
-      }).toArray(function(err, result) {
-      if(err) {
-        res.send(err);
-      } else if(result.length) {console.log("Found: " , result.length);}
-      res.send(200,result);
-    });
+      }).data();
+    res.send(200, patientQuery);
+    
     return next();
-  }
-);
+  });
 
 // Return available providers
 // Scope Required: 'providers:read'
@@ -235,43 +188,40 @@ server.get({path: '/providers'},
   passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['providers:read'] }),
   function respond(req, res, next) {
 
-    // id given is Okta user_id
+    // Id given is Okta user_id/sub
     res.send(200,
-    [
-      {
-        "id" : "00u80l4aziQTF1NNH0h7",
-        "name" : "Dr. John Doe",
-        "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000001.imageset/0000001.png"
-      },
-      {
-        "id" : "00u80l8xca6FLKQyT0h7",
-        "name" : "Dr. Jane Doe",
-        "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000002.imageset/0000002.png"
-      },
-      {
-        "id" : "00u80l8xcoPyO4q3w0h7",
-        "name" : "Dr. Richard Roe",
-        "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000003.imageset/0000003.png"
-      }
-    ]
-  );
+      [
+        {
+          "id" : "00u7vh4zm1l7YIjPB0h7",
+          "name" : "Dr. John Doe",
+          "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000001.imageset/0000001.png"
+        },
+        {
+          "id" : "00u7vg8f6mBaaa8cw0h7",
+          "name" : "Dr. Jane Doe",
+          "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000002.imageset/0000002.png"
+        },
+        {
+          "id" : "00u7vfod51Q0RBghC0h7",
+          "name" : "Dr. Richard Roe",
+          "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/OpenIDConnectSwift/Assets.xcassets/0000003.imageset/0000003.png"
+        }
+      ]
+    );
+
     return next();
   }
-);
+  );
 
 // Delete all from db
 server.get({path: '/delete'},
-    function respond(req, res, next) {
-    var cursor = collection.find({}).toArray(function (err, result) {
-      if (err) { res.send(err);}
-      else {
-        collection.deleteMany({});
-        console.log("Removed all entries from database");
-        res.send(204);
-      }
-    });
+  function respond(req, res, next) {
+    var removeAll = appointments.chain().remove();
+    console.log("Removed all entries from database");
+    res.send(204);
+    
     return next();
-});
+  });
 
 server.listen(8088, '0.0.0.0', function() {
   log.info('listening: %s', server.url);

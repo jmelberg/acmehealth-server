@@ -156,7 +156,7 @@ server.put({path: '/appointments/:_id'},
 server.del({path: '/appointments/:id'},
   passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['appointments:cancel'] }),
   function response(req, res, next) {
-    var removeAppointment = appointments.findOne({"$loki" : req.params.id}).data();
+    var removeAppointment = appointments.get(req.params.id);
     try {
       appointments.remove(removeAppointment);
       res.send(204);
@@ -194,17 +194,17 @@ server.get({path: '/providers'},
     res.send(200,
       [
         {
-          "id" : "00u80l4aziQTF1NNH0h7",
+          "id" : "00u7vh4zm1l7YIjPB0h7",
           "name" : "Dr. John Doe",
           "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/AcmeHealth/Assets.xcassets/0000001.imageset/0000001.png"
         },
         {
-          "id" : "00u80l8xca6FLKQyT0h7",
+          "id" : "00u7vg8f6mBaaa8cw0h7",
           "name" : "Dr. Jane Doe",
           "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/AcmeHealth/Assets.xcassets/0000002.imageset/0000002.png"
         },
         {
-          "id" : "00u80l8xcoPyO4q3w0h7",
+          "id" : "00u7vfod51Q0RBghC0h7",
           "name" : "Dr. Richard Roe",
           "profileImageUrl" : "https://raw.githubusercontent.com/jmelberg/acmehealth-swift/master/AcmeHealth/Assets.xcassets/0000003.imageset/0000003.png"
         }

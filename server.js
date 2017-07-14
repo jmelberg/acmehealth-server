@@ -185,11 +185,7 @@ server.get({path: '/appointments/:filter'},
   });
 
 // Return available providers
-// Scope Required: 'providers:read'
-server.get({path: '/providers'},
-  passport.authenticate('oauth2-jwt-bearer', { session: false, scopes: ['providers:read'] }),
-  function respond(req, res, next) {
-
+server.get({path: '/providers'},  function respond(req, res, next) {
     // Id given is Okta user_id/sub
     res.send(200,
       [

@@ -14,7 +14,7 @@ Node Server for CRUD API Management Operations
 #### iOS
 ```$ git clone git@github.com:jmelberg/acmehealth-swift.git```
 ### Install Repository Dependencies
-**Note:** Version 6.9.4 is the latest supported vision of Node. You can install this using the [n]() package.
+**Note:** Version 6.9.4 works out of the box. Please use this over any other versions of node.
 ```
 $ npm install -g n
 $ n 6.9.4

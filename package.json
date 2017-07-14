@@ -5,7 +5,7 @@
   "main": "server.js",
   "private": true,
   "scripts": {
-    "start": "node server.js --iss $ISSUER| ./node_modules/bunyan/bin/bunyan -o short"
+    "start": "node server.js --iss https://jordandemo.oktapreview.com/oauth2/aus9wtufc8L041qj50h| ./node_modules/bunyan/bin/bunyan -o short"
   },
   "license": "Apache 2.0",
   "dependencies": {
@@ -17,3 +17,5 @@
     "yargs": "^5.0.0"
   }
 }
+
+

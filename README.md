@@ -1,34 +1,28 @@
-# acmehealth-server
-Node Server for CRUD API Management Operations
+# AcmeHealth Server
+
+The projects serves as the backend for the AcmeHealth system. It performs simple OAuth token validation and CRUD operations for appointements. After configuring this project, you must also deploy one of the front end applications.
+
+The front end projects are available in [Angular single page application](https://github.com/jmelberg/acmehealth-spa), [Djagno framework application](https://github.com/oktadeveloper/okta-acmehealth-client-django), and a [Swift mobile app](https://github.com/jmelberg/acmehealth-swift).
 
 ## Project Setup In a Nutshell
 ### Download Cocoapods (ruby)
-```$ sudo gem intall cocoapods```
+```$ sudo gem install cocoapods```
+
 ### Install NodeJS
 ```$ brew install node```
-### Clone Repositories
-#### Server
+
+### Clone Repository
 ```$ git clone git@github.com:jmelberg/acmehealth-server.git```
-#### SPA
-```$ git clone git@github.com:jmelberg/acmehealth-spa.git```
-#### iOS
-```$ git clone git@github.com:jmelberg/acmehealth-swift.git```
-### Install Repository Dependencies
+
+### Install Node
 **Note:** Version 6.9.4 works out of the box. Please use this over any other versions of node.
 ```
 $ npm install -g n
 $ n 6.9.4
 ```
-#### Server
+
+### Server
 ``` $ npm install --no-optional```
-#### SPA
-``` $ npm install http-server -g```
-#### iOS
-``` $ pod install```   (Takes some time)
-### Run the Project
-#### Server:
+
+### Run the Server:
 ``` $ node server.js --iss "https://example.oktapreview.com/oauth2/aus7xbiefo72YS2QW0h7" --aud "http://localhost:8080"```
-#### SPA:
-```$ http-server```
-#### iOS:
-Open `OpenIDConnectSwift.xcworkspace` -> Run 

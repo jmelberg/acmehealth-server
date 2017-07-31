@@ -2,7 +2,7 @@
 
 The projects serves as the backend for the AcmeHealth system. It performs simple OAuth token validation and CRUD operations for appointements. After configuring this project, you must also deploy one of the front end applications.
 
-The front end projects are available in [Angular single page application](https://github.com/jmelberg/acmehealth-spa), [Djagno framework application](https://github.com/oktadeveloper/okta-acmehealth-client-django), and a [Swift mobile app](https://github.com/jmelberg/acmehealth-swift).
+The front end projects are available in [Angular single page application](https://github.com/jmelberg/acmehealth-spa) or a [Swift mobile app](https://github.com/jmelberg/acmehealth-swift).
 
 ## Project Setup In a Nutshell
 ### Download Cocoapods (ruby)

@@ -21,7 +21,7 @@ $ npm install -g n
 $ n 6.9.4
 ```
 
-### Server
+### Install Server
 ``` $ npm install --no-optional```
 
 ### Run the Server:
